@@ -19,13 +19,20 @@
 				z-index: 3;
 				position: absolute;
 			}
+			.button{
+
+			}
 		</style>
 	</head>
 	<body>
 
 		<div id="info">
 			<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - voxel painter - webgl<br>
-			<div onclick="DrawCB();"><img src="assets/icons/draw.svg" /></div>
+			<div id="toolbar">
+				<div onclick="DrawCB();"><img src="assets/icons/draw.svg" /></div>
+				<div onclick="max2minInterpolation();"><img src="assets/icons/max2min.svg" /></div>
+				<div onclick="min2max2minInterpolation();"><img src="assets/icons/min2max2min.svg" /></div>
+			</div>
 		</div>
 
 		<script type="module">
@@ -154,8 +161,17 @@
 				onDocumentMouseDown = onDrawMouseDown;
 				onDocumentMouseUp = onDrawMouseUp;
 				tool_intersect_fn = draw_intersect_fn;
+				interpolateType = maxToMinInterpolation
+			}
+
+			document.max2minInterpolation = function(){
+				interpolateType = maxToMinInterpolation
 			}
 			
+			document.min2max2minInterpolation = function(){
+				interpolateType = minToMaxToMinInterpolation
+			}
+
 			function mouseCoordinatesHadler(e){
 
 				e.preventDefault();
@@ -431,28 +447,60 @@
 
 			function onDocumentMouseUp( event ) {
 			}
+			function maxToMinInterpolation(){
+				var stroke2d = simplify(f3dStroke,1,true) 
+				var stroke2dLength = stroke2d.length;
+				var freeHandDrawScaleStep = (startFreeHandDrawScale - endFreeHandDrawScale)/stroke2dLength;
+				stroke2d.forEach((e,i,a) => {
+					createSphere(0xffff00,SPHERESCALE);
+					addSphereToScene({point:e});
+					lastSphere.scale.x = startFreeHandDrawScale - (freeHandDrawScaleStep*i)
+					lastSphere.scale.y = startFreeHandDrawScale - (freeHandDrawScaleStep*i)
+					lastSphere.scale.z = startFreeHandDrawScale - (freeHandDrawScaleStep*i)
+					addNextRing(lastSphere);
+					indexPickedBody = bodyNumber;
+					indexPickedChain = chainsNumber;
+					indexPickedObject = spheresNumber-1;
+					window.actionsStack.addAction('ADDSPHERE',indexPickedObject);
+				})
+				f3dStroke.length = 0;
+			}
+			function minToMaxToMinInterpolation(){
+				var stroke2d = simplify(f3dStroke,1,true) 
+				var stroke2dLength = stroke2d.length;
+				var freeHandDrawScaleStep = Math.round((startFreeHandDrawScale - endFreeHandDrawScale)/(stroke2dLength/2));
+				stroke2d.forEach((e,i,a) => {
+					createSphere(0xffff00,SPHERESCALE);
+					addSphereToScene({point:e});
+					if(i>=(stroke2dLength/2)){
+						lastSphere.scale.x = startFreeHandDrawScale - (freeHandDrawScaleStep*(i-stroke2dLength/2))
+						lastSphere.scale.y = startFreeHandDrawScale - (freeHandDrawScaleStep*(i-stroke2dLength/2))
+						lastSphere.scale.z = startFreeHandDrawScale - (freeHandDrawScaleStep*(i-stroke2dLength/2))	
+					}else{
+						lastSphere.scale.y = endFreeHandDrawScale + (freeHandDrawScaleStep*i)
+						lastSphere.scale.x = endFreeHandDrawScale + (freeHandDrawScaleStep*i)
+						lastSphere.scale.z = endFreeHandDrawScale + (freeHandDrawScaleStep*i)
+					}
+					addNextRing(lastSphere);
+					indexPickedBody = bodyNumber;
+					indexPickedChain = chainsNumber;
+					indexPickedObject = spheresNumber-1;
+					window.actionsStack.addAction('ADDSPHERE',indexPickedObject);
+				})
+				f3dStroke.length = 0;
+			}
+			function interpolateType(){
 
+			}
+			function createStroke(){
+				interpolateType()
+			}
 			function onDrawMouseUp( event ) {
 				intersect_fn = default_intersect_fn;
 				onDocumentMouseMove = onDefaultMouseMove;
 				//draw and not edit
 				if(f3dStroke.length > 0){
-					var stroke2d = simplify(f3dStroke,1,true) 
-					var stroke2dLength = stroke2d.length;
-					var freeHandDrawScaleStep = (startFreeHandDrawScale - endFreeHandDrawScale)/stroke2dLength;
-					stroke2d.forEach((e,i,a) => {
-						createSphere(0xffff00,SPHERESCALE);
-						addSphereToScene({point:e});
-						lastSphere.scale.x = startFreeHandDrawScale - (freeHandDrawScaleStep*i)
-						lastSphere.scale.y = startFreeHandDrawScale - (freeHandDrawScaleStep*i)
-						lastSphere.scale.z = startFreeHandDrawScale - (freeHandDrawScaleStep*i)
-						addNextRing(lastSphere);
-						indexPickedBody = bodyNumber;
-						indexPickedChain = chainsNumber;
-						indexPickedObject = spheresNumber-1;
-						window.actionsStack.addAction('ADDSPHERE',indexPickedObject);
-					})
-					f3dStroke.length = 0;
+					createStroke();
 					resetPosition();
 				}else{
 					createSphere(0xffff00,SPHERESCALE);
