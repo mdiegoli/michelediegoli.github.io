@@ -23,3 +23,7 @@ https://standardjs.com/
 NW instead of electronjs ?
 
 https://github.com/nwjs/nw.js
+
+Netlify
+
+https://f3d-electron.netlify.app/
